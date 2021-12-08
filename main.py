@@ -21,12 +21,18 @@ arg_parser.add_argument('-s','--stopword',nargs='?', default='stopwords.txt',hel
 arg_parser.add_argument('-p',help='Disable porter stemmer', action='store_false')
 arg_parser.add_argument('-w',nargs='?',help='Use number of postings as threashold if flag not present default is memory usage', type=int, const=100000)
 arg_parser.add_argument('-d','--documents',nargs='?',type=int, default=500,help='Number of documents analysed in each iteration, by default is 500')
+arg_parser.add_argument('-r','--ranking',nargs='?', default='lnc.ltc',help='')
 args = arg_parser.parse_args()
 
 
 #print("---PARSING DOCUMENTS--")
 parser = DocParser(args.file[0])
-index= Index()
+
+ranking = args.ranking.split(".")
+if len(ranking) != 2 or len(ranking[0]) != 3 or len(ranking[1]) != 3 or ranking[0][0] not in {'n','l','a','b','L'} or ranking[1][0] not in {'n','l','a','b','L'} or ranking[0][1] not in {'n','t','p'} or ranking[1][1] not in {'n','t','p'} or ranking[0][2] not in {'n','c','u','b'} or ranking[1][2] not in {'n','c','u','b'}:
+    index = Index('lnc.ltc')
+else:
+    index= Index(args.ranking)
 
 fname_out = "out.txt"
 
