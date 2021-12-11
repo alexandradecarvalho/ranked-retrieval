@@ -11,7 +11,7 @@ import math
 
 class Searcher:
 
-    def __init__(self, index_file, stemmer):
+    def __init__(self, index_file, stemmer, ranking):
         self.dictionary = dict()
         self.stemmer=PorterStemmer() if stemmer else None
 
@@ -26,9 +26,11 @@ class Searcher:
                 k, v = items.split(":")
                 d[k] = v
             
-            self.dictionary[term] = (idf,d)
+            self.dictionary[term] = (float(idf),d)
             
         f.close()
+
+        self.ranking=ranking
 
     def term_weight(self, query):
         tf = dict()
@@ -45,18 +47,28 @@ class Searcher:
         elif self.ranking[0] == 'L':
             return dict(map(lambda x: (x[0], round((1 + math.log(x[1])) / (1 + math.avg(tf.values())),2))),tf.items())
 
-    def search(self,inpt):
-        inpt=inpt.lower().split()
+    def search(self,query):
+        inpt=query.lower().split()
+        scores=dict()
 
         if self.stemmer:
             inpt = self.stemmer.stem(inpt)
 
-        tf = self.term_weight(inpt)
+        if self.ranking=="bm25":
+            for word in inpt:
+                if word in self.dictionary:
+                    for dic in self.dictionary[word][1]:
+                        scores[dic] =  scores.get(dic,0) + self.dictionary[word][0] * float(self.dictionary[word][1][dic])
+        
+        else:
+            tf = self.term_weight(inpt)
 
-        weights = dict()
+            weights = dict()
 
-        for word, term_freq in tf:
-            weights[word] = term_freq * self.dictionary.get(word,(0,0))[0] # w = tf * idf
+            for word, term_freq in tf:
+                weights[word] = term_freq * self.dictionary.get(word,(0,0))[0] # w = tf * idf
 
-
+        score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
+        print("Searching query", query)
+        [print(s) for s in score_list]
         # TODO: normalizar os 2 pesos, multiplicá-los e somar as multiplicações por doc para obter o ranking dos docs

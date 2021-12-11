@@ -16,19 +16,25 @@ from porter_stemmer import PorterStemmer
 
 class Index:
 
-    def __init__(self, ranking):
+    def __init__(self, ranking, bm25, k=1.2, b=0.75):
         self.dictionary = dict()
         self.npostings=0
         self.i = 0
         self.doc_id = 0
         self.ranking = ranking
-
+        self.docs_lenght= dict()
         self.tokenizer = Tokenizer()
         self.stemmer = PorterStemmer()
+        self.bm25=bm25
+        self.k=k
+        self.b=b
 
 
     def term_weight(self, postings_list):
-        if self.ranking[0] == 'l':
+        if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi
+            for doc in postings_list:
+                postings_list[doc] = round(((self.k+1)*postings_list[doc])/ (self.k*((1-self.b)+ (self.b * (self.docs_lenght[int(doc)]/(self.npostings/self.doc_id)))) + postings_list[doc]),2)
+        elif self.ranking[0] == 'l':
             for doc in postings_list:
                 postings_list[doc] = round(1 + math.log(postings_list[doc]),2)
         elif self.ranking[0] == 'a':
@@ -40,14 +46,14 @@ class Index:
         elif self.ranking[0] == 'L':
             for doc in postings_list:
                 postings_list[doc] = round((1 + math.log(postings_list[doc])) / (1 + math.avg(postings_list.values())),2)
-
+            
         return postings_list
         
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 'n':
             return 1
-        elif self.ranking[1] == 't':
+        elif self.ranking[1] == 't' or self.ranking=="bm25":
             return round(math.log(self.doc_id / len(postings_list)),2)
         elif self.ranking[1] == 'p':
             return round(max(0, math.log(self.doc_id-len(postings_list)/len(postings_list))),2)
@@ -168,8 +174,10 @@ class Index:
         documents = {key:self.stemmer.stem(self.tokenizer.tokenize(text, filter=length, option=stopwords), option=p) for key,text in docs.items()}
 
         for doc_id,token_list in documents.items():
-            pos=0
             self.doc_id += 1
+            self.docs_lenght[self.doc_id]=len(documents[doc_id]) #guardar o numero de termos para cada documento
+
+            
             for token in token_list:
                 if not token in self.dictionary: 
                     self.dictionary[token] = dict()
