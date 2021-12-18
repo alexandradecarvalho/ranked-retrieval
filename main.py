@@ -23,20 +23,20 @@ arg_parser.add_argument('-w',nargs='?',help='Use number of postings as threashol
 arg_parser.add_argument('-d','--documents',nargs='?',type=int, default=500,help='Number of documents analysed in each iteration, by default is 500')
 arg_parser.add_argument('-r','--ranking',nargs='*', default='lnc.ltc',help='')
 
-args = arg_parser.parse_args()
 fname_out = "out.txt"
+args = arg_parser.parse_args()
+ranking = args.ranking.split(" ") if type(args.ranking) != list else args.ranking
 
 if args.file:
-    parser = DocParser(args.file)
+    parser = DocParser(args.file)    
 
-
-    if args.ranking[0]=="bm25":
+    if ranking[0]=="bm25":
         if len(args.ranking)==1:
             index= Index(args.ranking[0]) # Index(ranking schema)
         elif len(args.ranking)==3:
             index = Index(args.ranking[0],float(args.ranking[1]),float(args.ranking[2])) #Index(ranking schema, k,b)
     else:
-        ranking = args.ranking[0].split(".")
+        ranking = ranking[0].split(".")
         if  len(ranking) != 2 or len(ranking[0]) != 3 or len(ranking[1]) != 3 or ranking[0][0] not in {'n','l','a','b','L'} or ranking[1][0] not in {'n','l','a','b','L'} or ranking[0][1] not in {'n','t','p'} or ranking[1][1] not in {'n','t','p'} or ranking[0][2] not in {'n','c','u','b'} or ranking[1][2] not in {'n','c','u','b'}:
             index = Index('lnc.ltc')
         else:
@@ -60,7 +60,7 @@ if args.file:
     print(f'Vocabulary size: {sum(1 for line in open(fname_out))}')
 
 init_time= time.time()
-s = Searcher(fname_out,args.p, args.ranking[0], args.stopword, args.length)
+s = Searcher(fname_out,args.p, ranking[0], args.stopword, args.length)
 print(f'Index searcher start up time: {time.time()-init_time} s')
 
 s.search("zotac")
