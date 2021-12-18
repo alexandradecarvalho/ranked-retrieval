@@ -14,9 +14,13 @@ import math
 from tokenizer import Tokenizer
 from porter_stemmer import PorterStemmer
 
+# TODO : Store docID mapper 
+# TODO : store in file metadata the processing done (spimi)
+# TODO : explore way to access merge file straight away 
+
 class Index:
 
-    def __init__(self, ranking, bm25, k=1.2, b=0.75):
+    def __init__(self, ranking, k=1.2, b=0.75):
         self.dictionary = dict()
         self.npostings=0
         self.i = 0
@@ -25,10 +29,8 @@ class Index:
         self.docs_lenght= dict()
         self.tokenizer = Tokenizer()
         self.stemmer = PorterStemmer()
-        self.bm25=bm25
         self.k=k
         self.b=b
-
 
     def term_weight(self, postings_list):
         if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi
@@ -47,8 +49,7 @@ class Index:
             for doc in postings_list:
                 postings_list[doc] = round((1 + math.log(postings_list[doc])) / (1 + math.avg(postings_list.values())),2)
             
-        return postings_list
-        
+        return postings_list        
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 'n':
