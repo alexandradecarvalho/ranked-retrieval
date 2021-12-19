@@ -9,6 +9,8 @@ from tokenizer import Tokenizer
 from porter_stemmer import PorterStemmer
 import math
 import os
+import linecache
+
 
 class Searcher:
 
@@ -80,7 +82,7 @@ class Searcher:
             twd = dict()
             docIds = set()
             for word in inpt:
-                 docIds += set(self.dictionary[word][1].keys()) 
+                 docIds = docIds | set(self.dictionary[word][1].keys()) 
             
             # TODO : Find all tws for these docs in order to calculate docs lengths  
             #for doc in docIds:

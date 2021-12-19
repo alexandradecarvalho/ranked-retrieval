@@ -103,6 +103,7 @@ class Index:
         [os.remove((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
 
         # write to final output file the temporary file merge result
+        dict_file = open("dictionary.txt","w")
         with open("temp"+self.out_file, 'r') as temp_file, open(self.out_file,'w') as output_file:
             term = ""
             postings_list = dict()
@@ -117,24 +118,26 @@ class Index:
                     else:
                         term_info = self.term_weight(term_info) # postings_list[doc] is not simple frequency, but the weight (tf*df) 
                         idf = round(math.log(self.doc_id / len(term_info)),2)
-                        output_file.writelines(str(idf) + ';' + str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
+                        dict_file.writelines(str(idf))
+                        dict_file.writelines("\n")
+                        output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                         output_file.writelines("\n")
                         term = contents[0]
                         term_info= contents[1:]
                         term_info={item.split(":")[0]:int(item.split(":")[1].replace(",","")) for item in term_info}
-                        output_file.write(contents[0] + ":")
+                        dict_file.write(contents[0] + ":")
                 else:
                     term = contents[0] # term 
                     term_info= contents[1:] # [docId:freq,docId:freq]
                     term_info={item.split(":")[0]:int(item.split(":")[1].replace(",","")) for item in term_info} # postings_list = {docId:freq,docId:freq}
-                    output_file.write(contents[0] + ":")
+                    dict_file.write(contents[0] + ":")
             if term:
                 term_info = self.term_weight(term_info)
                 output_file.writelines(str(self.doc_frequency(term_info)) + ';' + str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
 
         os.remove("temp"+self.out_file)
-
+        dict_file.close()
 
     def finalize(self):
 
