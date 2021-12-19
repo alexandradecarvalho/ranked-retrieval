@@ -8,15 +8,16 @@ Class Searcher loads the dictionary from the disk, and its search function recei
 from tokenizer import Tokenizer 
 from porter_stemmer import PorterStemmer
 import math
+import os
 
 class Searcher:
 
-    def __init__(self, index_file, stemmer, ranking, stopwords, length):
+    def __init__(self, index_file):
         self.dictionary = dict()
-        self.stopwords = stopwords
-        self.length = length
+        self.stopwords = os.getxattr(index_file, 'user.stopwords').decode() if os.getxattr(index_file, 'user.stopwords').decode() != 'None' else None
+        self.length = int(os.getxattr(index_file, 'user.length').decode())
         self.tokenizer = Tokenizer()
-        self.stemmer=PorterStemmer() if stemmer else None
+        self.stemmer=PorterStemmer() if os.getxattr(index_file, 'user.stemmer').decode()=='True' else None
 
         f = open(index_file, 'r')
 
@@ -33,7 +34,7 @@ class Searcher:
             
         f.close()
 
-        self.ranking=ranking
+        self.ranking=os.getxattr(index_file, 'user.ranking').decode()
 
     def term_weight_query(self, query):
         tf = dict()
