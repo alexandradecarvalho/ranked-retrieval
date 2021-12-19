@@ -15,7 +15,6 @@ from tokenizer import Tokenizer
 from porter_stemmer import PorterStemmer
 
 # TODO : store in file metadata the processing done (spimi)
-# TODO : explore way to access merge file straight away 
 
 class Index:
 
@@ -43,6 +42,8 @@ class Index:
             return dict(map(lambda x: (x[0],self.doc_frequency(postings_list)),postings_list.items()))
         elif self.ranking[0] == 'L':
             return dict(map(lambda x: (x[0],round(((1 + math.log(x[1])) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)),2)),postings_list.items())) 
+        elif self.ranking[0] == 'n':
+            return dict(map(lambda x: (x[0], x[1]*self.doc_frequency(postings_list))))
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 'n':
@@ -133,7 +134,10 @@ class Index:
                     dict_file.write(contents[0] + ":")
             if term:
                 term_info = self.term_weight(term_info)
-                output_file.writelines(str(self.doc_frequency(term_info)) + ';' + str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
+                idf = round(math.log(self.doc_id / len(term_info)),2)
+                dict_file.writelines(str(idf))
+                dict_file.writelines("\n")
+                output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
 
         os.remove("temp"+self.out_file)

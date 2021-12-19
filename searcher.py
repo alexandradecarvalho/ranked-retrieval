@@ -15,28 +15,33 @@ import linecache
 class Searcher:
 
     def __init__(self, index_file):
+        self.index_file = index_file
         self.dictionary = dict()
+        self.doc_squared_weights = dict()
         self.stopwords = os.getxattr(index_file, 'user.stopwords').decode() if os.getxattr(index_file, 'user.stopwords').decode() != 'None' else None
         self.length = int(os.getxattr(index_file, 'user.length').decode())
         self.tokenizer = Tokenizer()
         self.stemmer=PorterStemmer() if os.getxattr(index_file, 'user.stemmer').decode()=='True' else None
 
-        f = open(index_file, 'r')
-
+        f = open("dictionary.txt", 'r')
+        postings_file = open(index_file,'r')
+        counter = 0
         for line in f:
-            dict_entry = line.strip().split(";")
-            term, idf = dict_entry[0].split(":")
+            counter += 1
+            term, idf = line.strip().split(":")
             
-            d = dict()
-            for items in dict_entry[1].split(","):
-                k, v = items.split(":")
-                d[k] = v
-            
-            self.dictionary[term] = (float(idf),d) # {term: (idf, {doc:tw,doc:tw})}
+            self.dictionary[term] = (float(idf),counter)  # TODO: Maybe change this to tree
+
+            line = postings_file.readline()
+            if line:
+                for entry in line.split(","):
+                    d,w = entry.split(":")
+                    self.doc_squared_weights[d] = self.doc_squared_weights.get(d,0) + float(w)**2
             
         f.close()
+        postings_file.close()
 
-        self.ranking=os.getxattr(index_file, 'user.ranking').decode()
+        self.ranking=os.getxattr(index_file, 'user.ranking').decode() # TODO : Check why this is wrong
 
     def term_weight_query(self, query):
         tf = dict()
@@ -70,28 +75,21 @@ class Searcher:
         if self.stemmer:
             inpt = self.stemmer.stem(inpt)
 
+        inpt = [term for term in inpt if term in self.dictionary]
+
         if self.ranking=="bm25":
             for word in inpt:
-                if word in self.dictionary:
-                    for dic in self.dictionary[word][1]:
-                        scores[dic] =  scores.get(dic,0) + self.dictionary[word][0] * float(self.dictionary[word][1][dic])
+                for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","): # doc:tw,doc:tw
+                    tup = item.split(":")
+                    scores[tup[0]] =  scores.get(tup[0],0) + self.dictionary[word][0] * float(tup[1])
         else:
-            twq = self.term_weight_query(inpt) # {term : tf*idf}
-            normed_query_weights = self.normalized_weights(twq)
+            twq = self.normalized_weights(self.term_weight_query(inpt)) # {term : norm_w}
 
-            twd = dict()
-            docIds = set()
             for word in inpt:
-                 docIds = docIds | set(self.dictionary[word][1].keys()) 
+                for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","):
+                    tup = item.split(":")
+                    scores[tup[0]] = scores.get(tup[0],0) + (twq[word]* float(tup[1])/math.sqrt(self.doc_squared_weights[tup[0]])) 
             
-            # TODO : Find all tws for these docs in order to calculate docs lengths  
-            #for doc in docIds:
-            #    pass
-
-                
-            #twd[word] = dict(map(lambda x: (x[0], df*x[1]),postings_dict.items()))
-
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
         print("Searching query", query)
-        [print(s) for s in score_list]
-        # TODO: for each doc - multiply both normalized weights and add them to get doc scores
+        [print(int(s[0].strip()),linecache.getline("idmapper.txt",int(s[0].strip())),s[1]) for s in score_list]
