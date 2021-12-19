@@ -92,4 +92,4 @@ class Searcher:
             
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
         print("Searching query", query)
-        [print(int(s[0].strip()),linecache.getline("idmapper.txt",int(s[0].strip())),s[1]) for s in score_list]
+        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n",""),s[1]) for s in score_list]

@@ -180,7 +180,7 @@ class Index:
         #tokanization and stemmig of the documents 
         documents = {key:self.stemmer.stem(self.tokenizer.tokenize(text, filter=length, option=stopwords), option=p) for key,text in docs.items()}
 
-        idmapper = open("idmapper.txt",'w')
+        idmapper = open("idmapper.txt",'a')
         for doc_id,token_list in documents.items():
             idmapper.write(doc_id+"\n")
             self.doc_id += 1
