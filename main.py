@@ -40,7 +40,7 @@ if args.file:
         if  len(ranking) != 2 or len(ranking[0]) != 3 or len(ranking[1]) != 3 or ranking[0][0] not in {'n','l','a','b','L'} or ranking[1][0] not in {'n','l','a','b','L'} or ranking[0][1] not in {'n','t','p'} or ranking[1][1] not in {'n','t','p'} or ranking[0][2] not in {'n','c','u','b'} or ranking[1][2] not in {'n','c','u','b'}:
             index = Index(fname_out,'lnc.ltc')
         else:
-            index = Index(fname_out,ranking[0])
+            index = Index(fname_out,args.ranking)
 
     nlines = args.documents
 
@@ -62,6 +62,7 @@ if args.file:
 init_time= time.time()
 s = Searcher(fname_out)
 print(f'Index searcher start up time: {time.time()-init_time} s')
-
+init_time= time.time()
 s.search("zotac")
 s.search("hello world") 
+print(f'Index query search time: {time.time()-init_time} s')

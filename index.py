@@ -14,7 +14,13 @@ import math
 from tokenizer import Tokenizer
 from porter_stemmer import PorterStemmer
 
-# TODO : store in file metadata the processing done (spimi)
+# TODO : normalize weights
+
+# Pivoted unique normalization
+# weight/(1 - slope + slope*(ui/avg(u))) ui is the number of unic terms in the doc while avg(u) is the average number of unic terms in all docs, slope is a number between 0 and 1 
+
+#Byte size normalization
+#weight/(1 - slope + slope*(charLen/avg(charLen))) charLen is the number characters in the doc while avg(charLen) is the average number of characters in all docs, slope is a number between 0 and 1 
 
 class Index:
 
@@ -25,7 +31,7 @@ class Index:
         self.doc_id = 0
         self.out_file=out_file
         self.ranking = ranking
-        self.docs_lenght= dict()
+        self.docs_info= dict()
         self.tokenizer = Tokenizer()
         self.stemmer = PorterStemmer()
         self.k=k
@@ -33,7 +39,7 @@ class Index:
 
     def term_weight(self, postings_list):
         if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi 
-            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_lenght[int(x[0])]/(self.npostings/self.doc_id)))) + x[1]),2)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.npostings/self.doc_id)))) + x[1]),2)),postings_list.items())) 
         elif self.ranking[0] == 'l':
             return dict(map(lambda x: (x[0],round((1 + math.log(x[1]))*self.doc_frequency(postings_list),2)),postings_list.items()))
         elif self.ranking[0] == 'a':
@@ -184,7 +190,13 @@ class Index:
         for doc_id,token_list in documents.items():
             idmapper.write(doc_id+"\n")
             self.doc_id += 1
-            self.docs_lenght[self.doc_id]=len(documents[doc_id]) #guardar o numero de termos para cada documento
+
+            if self.ranking=="bm25":
+                self.docs_info[self.doc_id]=len(documents[doc_id]) #guardar o numero de termos para cada documento
+            elif self.ranking[2]=="u": 
+                self.docs_info[self.doc_id]=len(set(documents[doc_id])) #guardar o numero de termos unicos para cada documento
+            elif self.ranking[2]=="b":
+                self.docs_info[self.doc_id]= sum([len(t) for t in documents[doc_id]]) #guardar o numero de caracteres para cada documento
 
             
             for token in token_list:

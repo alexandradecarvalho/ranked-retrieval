@@ -42,6 +42,7 @@ class Searcher:
         postings_file.close()
 
         self.ranking=os.getxattr(index_file, 'user.ranking').decode() # TODO : Check why this is wrong
+        print(self.ranking)
 
     def term_weight_query(self, query):
         tf = dict()
@@ -49,19 +50,19 @@ class Searcher:
         for word in query:
             tf[word] = tf.get(word,0) + 1
 
-        if self.ranking[0] == 'l':
+        if self.ranking[4] == 'l':
             return dict(map(lambda x: (x[0], round(((1 + math.log(x[1])))*self.dictionary[x[0]][0],2)),tf.items()))
-        elif self.ranking[0] == 'a':
+        elif self.ranking[4] == 'a':
             return dict(map(lambda x: (x[0],round((0.5 + (0.5* x[1] / max(tf.values())))*self.dictionary[x[0]][0],2)), tf.items()))
-        elif self.ranking[0] == 'b':
+        elif self.ranking[4] == 'b':
             return dict(map(lambda x: (x[0], self.dictionary[x[0]][0]),tf.items()))
-        elif self.ranking[0] == 'L':
+        elif self.ranking[4] == 'L':
             return dict(map(lambda x: (x[0], round(((1 + math.log(x[1])) / (1 + math.avg(tf.values())))*self.dictionary[x[0]][0],2)),tf.items()))
 
     def normalized_weights(self,weights):
-        if self.ranking[2] == 'n':
+        if self.ranking[6] == 'n':
             return weights
-        elif self.ranking[2] == 'c':
+        elif self.ranking[6] == 'c':
             length = math.sqrt(sum([v**2 for v in weights.values()]))
             return dict(map(lambda x: (x[0],x[1]/length),weights.items()))
         # TODO : check other two ?
