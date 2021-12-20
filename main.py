@@ -63,6 +63,8 @@ init_time= time.time()
 s = Searcher(fname_out)
 print(f'Index searcher start up time: {time.time()-init_time} s')
 init_time= time.time()
-s.search("zotac")
-s.search("hello world") 
+
+queries = open("queries.txt","r")
+for q in queries:
+    s.search(q.strip()) 
 print(f'Index query search time: {time.time()-init_time} s')

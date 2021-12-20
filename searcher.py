@@ -41,8 +41,7 @@ class Searcher:
         f.close()
         postings_file.close()
 
-        self.ranking=os.getxattr(index_file, 'user.ranking').decode() # TODO : Check why this is wrong
-        print(self.ranking)
+        self.ranking=os.getxattr(index_file, 'user.ranking').decode()
 
     def term_weight_query(self, query):
         tf = dict()
@@ -58,14 +57,15 @@ class Searcher:
             return dict(map(lambda x: (x[0], self.dictionary[x[0]][0]),tf.items()))
         elif self.ranking[4] == 'L':
             return dict(map(lambda x: (x[0], round(((1 + math.log(x[1])) / (1 + math.avg(tf.values())))*self.dictionary[x[0]][0],2)),tf.items()))
+        else:
+            return tf
 
-    def normalized_weights(self,weights):
-        if self.ranking[6] == 'n':
-            return weights
-        elif self.ranking[6] == 'c':
+    def normalized_query_weights(self,weights):
+        if self.ranking[6] == 'c':
             length = math.sqrt(sum([v**2 for v in weights.values()]))
             return dict(map(lambda x: (x[0],x[1]/length),weights.items()))
-        # TODO : check other two ?
+        else:
+            return weights
 
     def search(self,query):
         inpt=query.lower()
@@ -84,13 +84,13 @@ class Searcher:
                     tup = item.split(":")
                     scores[tup[0]] =  scores.get(tup[0],0) + self.dictionary[word][0] * float(tup[1])
         else:
-            twq = self.normalized_weights(self.term_weight_query(inpt)) # {term : norm_w}
+            twq = self.normalized_query_weights(self.term_weight_query(inpt)) # {term : norm_w}
 
             for word in inpt:
                 for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","):
                     tup = item.split(":")
-                    scores[tup[0]] = scores.get(tup[0],0) + (twq[word]* float(tup[1])/math.sqrt(self.doc_squared_weights[tup[0]])) 
+                    scores[tup[0]] = scores.get(tup[0],0) + (twq[word]*float(tup[1])) 
             
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
-        print("Searching query", query)
-        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n",""),s[1]) for s in score_list]
+        print("\n Q:", query)
+        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n","")) for s in score_list]
