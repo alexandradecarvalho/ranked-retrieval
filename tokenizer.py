@@ -26,6 +26,7 @@ class Tokenizer:
                 f = open(option,'r')
                 self.stopwords = f.readlines()
                 f.close()
+                self.stopwords = set(self.stopwords)
             except:
                 self.stopwords = set()
         

@@ -21,26 +21,25 @@ arg_parser.add_argument('-s','--stopword',nargs='?', default='stopwords.txt',hel
 arg_parser.add_argument('-p',help='Disable porter stemmer', action='store_false')
 arg_parser.add_argument('-w',nargs='?',help='Use number of postings as threashold if flag not present default is memory usage', type=int, const=100000)
 arg_parser.add_argument('-d','--documents',nargs='?',type=int, default=500,help='Number of documents analysed in each iteration, by default is 500')
-arg_parser.add_argument('-r','--ranking',nargs='*', default='lnc.ltc',help='')
+arg_parser.add_argument('-r','--ranking',nargs='*', default=['lnc.ltc'],help='')
 
 fname_out = "out.txt"
 args = arg_parser.parse_args()
-ranking = args.ranking.split(" ") if type(args.ranking) != list else args.ranking
 
 if args.file:
     parser = DocParser(args.file)    
 
-    if ranking[0]=="bm25":
-        if len(args.ranking)==1:
-            index= Index(fname_out, args.ranking[0]) # Index(ranking schema, outfile)
-        elif len(args.ranking)==3:
+    if args.ranking[0]=="bm25":
+        if len(args.ranking)==3:
             index = Index(fname_out, args.ranking[0],float(args.ranking[1]),float(args.ranking[2])) #Index(fname_out, ranking schema, k,b)
+        else:
+            index= Index(fname_out, args.ranking[0]) # Index(outfile, ranking schema)
     else:
-        ranking = ranking[0].split(".")
+        ranking = args.ranking[0].split(".")
         if  len(ranking) != 2 or len(ranking[0]) != 3 or len(ranking[1]) != 3 or ranking[0][0] not in {'n','l','a','b','L'} or ranking[1][0] not in {'n','l','a','b','L'} or ranking[0][1] not in {'n','t','p'} or ranking[1][1] not in {'n','t','p'} or ranking[0][2] not in {'n','c','u','b'} or ranking[1][2] not in {'n','c','u','b'}:
             index = Index(fname_out,'lnc.ltc')
         else:
-            index = Index(fname_out,args.ranking)
+            index = Index(fname_out,args.ranking[0])
 
     nlines = args.documents
 

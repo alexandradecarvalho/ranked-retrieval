@@ -23,7 +23,7 @@ class Index:
         self.i = 0
         self.doc_id = 0
         self.out_file=out_file
-        self.ranking = ranking[0]
+        self.ranking = ranking
         self.docs_info= dict()
         self.tokenizer = Tokenizer()
         self.stemmer = PorterStemmer()
@@ -144,8 +144,6 @@ class Index:
                     dict_file.write(contents[0] + ":")
             if term:
                 term_info = self.term_weight(term_info)
-                print(term)
-                print(term_info)
                 idf = round(math.log(self.doc_id / len(term_info)),2)
                 dict_file.writelines(str(idf))
                 dict_file.writelines("\n")
@@ -221,7 +219,6 @@ class Index:
         for doc_id,token_list in documents.items():
             idmapper.write(doc_id+"\n")
             self.doc_id += 1
-
             if self.ranking=="bm25":
                 self.docs_info[self.doc_id]=len(documents[doc_id]) #guardar o numero de termos para cada documento
             elif self.ranking[2]=="u": 

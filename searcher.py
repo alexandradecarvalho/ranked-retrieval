@@ -17,29 +17,19 @@ class Searcher:
     def __init__(self, index_file):
         self.index_file = index_file
         self.dictionary = dict()
-        self.doc_squared_weights = dict()
         self.stopwords = os.getxattr(index_file, 'user.stopwords').decode() if os.getxattr(index_file, 'user.stopwords').decode() != 'None' else None
         self.length = int(os.getxattr(index_file, 'user.length').decode())
         self.tokenizer = Tokenizer()
         self.stemmer=PorterStemmer() if os.getxattr(index_file, 'user.stemmer').decode()=='True' else None
 
         f = open("dictionary.txt", 'r')
-        postings_file = open(index_file,'r')
         counter = 0
         for line in f:
             counter += 1
             term, idf = line.strip().split(":")
             
-            self.dictionary[term] = (float(idf),counter)  # TODO: Maybe change this to tree
-
-            line = postings_file.readline()
-            if line:
-                for entry in line.split(","):
-                    d,w = entry.split(":")
-                    self.doc_squared_weights[d] = self.doc_squared_weights.get(d,0) + float(w)**2
-            
+            self.dictionary[term] = (float(idf),counter)  # TODO: Maybe change this to tree            
         f.close()
-        postings_file.close()
 
         self.ranking=os.getxattr(index_file, 'user.ranking').decode()
 
@@ -78,19 +68,18 @@ class Searcher:
 
         inpt = [term for term in inpt if term in self.dictionary]
 
-        if self.ranking=="bm25":
+        if self.ranking.split(" ")[0] == "bm25":
             for word in inpt:
                 for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","): # doc:tw,doc:tw
                     tup = item.split(":")
                     scores[tup[0]] =  scores.get(tup[0],0) + self.dictionary[word][0] * float(tup[1])
         else:
             twq = self.normalized_query_weights(self.term_weight_query(inpt)) # {term : norm_w}
-
             for word in inpt:
                 for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","):
                     tup = item.split(":")
                     scores[tup[0]] = scores.get(tup[0],0) + (twq[word]*float(tup[1])) 
             
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
-        print("\n Q:", query)
+        print("\nQ:", query)
         [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n","")) for s in score_list]
