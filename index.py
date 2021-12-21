@@ -40,41 +40,34 @@ class Index:
 
     def term_weight(self, postings_list):
         if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi 
-            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.npostings/self.doc_id)))) + x[1]),2)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.npostings/self.doc_id)))) + x[1]),4)),postings_list.items())) 
         elif self.ranking[0]  == 'l':
-            return dict(map(lambda x: (x[0],round((1 + math.log(x[1]))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),2)),postings_list.items()))
+            return dict(map(lambda x: (x[0],round((1 + math.log(x[1]))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
         elif self.ranking[0] == 'a':
-            return dict(map(lambda x: (x[0],round((0.5 + (0.5*float(x[1]) / max(postings_list.values())))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),2)),postings_list.items()))
+            return dict(map(lambda x: (x[0],round((0.5 + (0.5*float(x[1]) / max(postings_list.values())))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
         elif self.ranking[0] == 'b':
             return dict(map(lambda x: (x[0],self.doc_frequency(postings_list)*self.normalization(int(x[0]))),postings_list.items()))
         elif self.ranking[0] == 'L':
-            return dict(map(lambda x: (x[0],round(((1 + math.log(x[1])) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))),2)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],round(((1 + math.log(x[1])) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))),4)),postings_list.items())) 
         else:
             return dict(map(lambda x: (x[0], x[1]*self.doc_frequency(postings_list)*self.normalization(int(x[0])))))
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 't' or self.ranking=="bm25":
-            return round(math.log(self.doc_id / len(postings_list)),2)
+            return round(math.log(self.doc_id / len(postings_list)),4)
         elif self.ranking[1] == 'p':
-            return round(max(0, math.log(self.doc_id-len(postings_list)/len(postings_list))),2)
+            return round(max(0, math.log(self.doc_id-len(postings_list)/len(postings_list))),4)
         else:
             return 1
  
     def merge_files(self, final_file,i, init=0):
         
         # write all lines from all temporary segments in order to temp file
-        with open("temp"+self.out_file, 'w+') as output_file:
+        with open(final_file,'w') as output_file:
             open_files = [open((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
-            output_file.writelines(heapq.merge(*open_files))
-            [f.close() for f in open_files]
-
-        [os.remove((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
-
-        # write to final output file the temporary file merge result
-        with open("temp"+self.out_file, 'r') as temp_file, open(final_file,'w') as output_file:
+            merged=heapq.merge(*open_files)
             term = ""
-            postings_list = dict()
-            for line in temp_file:
+            for line in merged:
                 contents = line.split()
                 if term:
                     if contents[0] == term:
@@ -97,25 +90,20 @@ class Index:
             if term:
                 output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
-
-        os.remove("temp"+self.out_file)
-
-    def merge_and_compute_weights(self,i, init=0):
-        
-        # write all lines from all temporary segments in order to temp file
-        with open("temp"+self.out_file, 'w+') as output_file:
-            open_files = [open((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
-            output_file.writelines(heapq.merge(*open_files))
             [f.close() for f in open_files]
 
         [os.remove((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
 
-        # write to final output file the temporary file merge result
-        dict_file = open("dictionary.txt","w")
-        with open("temp"+self.out_file, 'r') as temp_file, open(self.out_file,'w') as output_file:
+
+    def merge_and_compute_weights(self,i, init=0):
+        
+        # write all lines from all temporary segments in order to temp file
+        with open(self.out_file,'w') as output_file:
+            open_files = [open((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
+            merged = heapq.merge(*open_files)
+            dict_file = open("dictionary.txt","w")
             term = ""
-            postings_list = dict()
-            for line in temp_file:
+            for line in merged:
                 contents = line.split()
                 if term:
                     if contents[0] == term:
@@ -153,6 +141,12 @@ class Index:
                 output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
 
+            [f.close() for f in open_files]
+            dict_file.close()
+
+        [os.remove((str(n) + ".").join(self.out_file.split('.'))) for n in range(init,i+1)]
+
+
         if self.ranking[2] == 'c':
             os.rename(self.out_file, self.out_file+"temp")
             with open(self.out_file+"temp",'r') as temp_file, open(self.out_file,"w") as output_file:        
@@ -172,8 +166,6 @@ class Index:
 
             os.remove(self.out_file+"temp")
 
-        os.remove("temp"+self.out_file)
-        dict_file.close()
 
     def finalize(self):
 
