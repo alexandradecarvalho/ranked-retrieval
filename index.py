@@ -104,6 +104,7 @@ class Index:
             merged = heapq.merge(*open_files)
             dict_file = open("dictionary.txt","w")
             term = ""
+            fpos= 0
             for line in merged:
                 contents = line.split()
                 if term:
@@ -115,7 +116,7 @@ class Index:
                     else:
                         term_info = self.term_weight(term_info) # postings_list[doc] is not simple frequency, but the weight (tf*df) 
                         idf = round(math.log(self.doc_id / len(term_info),10),2)
-                        dict_file.writelines(str(idf))
+                        dict_file.writelines(str(idf)+":"+str(fpos))
                         dict_file.writelines("\n")
                         if self.ranking[2] == 'c':
                             for doc,weight in term_info.items():
@@ -125,8 +126,10 @@ class Index:
                         term = contents[0]
                         term_info= contents[1:]
                         term_info={item.split(":")[0]:int(item.split(":")[1].replace(",","")) for item in term_info}
+                        fpos=output_file.tell()
                         dict_file.write(contents[0] + ":")
                 else:
+                    fpos=output_file.tell()
                     term = contents[0] # term 
                     term_info= contents[1:] # [docId:freq,docId:freq]
                     term_info={item.split(":")[0]:int(item.split(":")[1].replace(",","")) for item in term_info} # postings_list = {docId:freq,docId:freq}
@@ -134,7 +137,7 @@ class Index:
             if term:
                 term_info = self.term_weight(term_info)
                 idf = round(math.log(self.doc_id / len(term_info),10),2)
-                dict_file.writelines(str(idf))
+                dict_file.writelines(str(idf)+":"+str(fpos))
                 dict_file.writelines("\n")
                 if self.ranking[2] == 'c':
                     for doc,weight in term_info.items():
