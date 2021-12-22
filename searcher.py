@@ -40,13 +40,13 @@ class Searcher:
             tf[word] = tf.get(word,0) + 1
 
         if self.ranking[4] == 'l':
-            return dict(map(lambda x: (x[0], round(((1 + math.log(x[1])))*self.dictionary[x[0]][0],2)),tf.items()))
+            return dict(map(lambda x: (x[0], round(((1 + math.log(x[1],10)))*self.dictionary[x[0]][0],6)),tf.items()))
         elif self.ranking[4] == 'a':
-            return dict(map(lambda x: (x[0],round((0.5 + (0.5* x[1] / max(tf.values())))*self.dictionary[x[0]][0],2)), tf.items()))
+            return dict(map(lambda x: (x[0],round((0.5 + (0.5* x[1] / max(tf.values())))*self.dictionary[x[0]][0],6)), tf.items()))
         elif self.ranking[4] == 'b':
             return dict(map(lambda x: (x[0], self.dictionary[x[0]][0]),tf.items()))
         elif self.ranking[4] == 'L':
-            return dict(map(lambda x: (x[0], round(((1 + math.log(x[1])) / (1 + math.avg(tf.values())))*self.dictionary[x[0]][0],2)),tf.items()))
+            return dict(map(lambda x: (x[0], round(((1 + math.log(x[1],10)) / (1 + math.avg(tf.values())))*self.dictionary[x[0]][0],6)),tf.items()))
         else:
             return tf
 
@@ -72,7 +72,7 @@ class Searcher:
             for word in inpt:
                 for item in linecache.getline(self.index_file, self.dictionary[word][1]).split(","): # doc:tw,doc:tw
                     tup = item.split(":")
-                    scores[tup[0]] =  scores.get(tup[0],0) + self.dictionary[word][0] * float(tup[1])
+                    scores[tup[0]] =  scores.get(tup[0],0) + (self.dictionary[word][0] * float(tup[1]))
         else:
             twq = self.normalized_query_weights(self.term_weight_query(inpt)) # {term : norm_w}
             for word in inpt:
@@ -82,4 +82,4 @@ class Searcher:
             
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
         print("\nQ:", query)
-        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n","")) for s in score_list]
+        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n",""), s[1]) for s in score_list]

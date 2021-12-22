@@ -19,6 +19,7 @@ class Index:
     def __init__(self, out_file, ranking, k=1.2, b=0.75):
         self.dictionary = dict()
         self.npostings=0
+        self.totalpostings=0
         self.slope = 0.375
         self.i = 0
         self.doc_id = 0
@@ -40,23 +41,23 @@ class Index:
 
     def term_weight(self, postings_list):
         if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi 
-            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.npostings/self.doc_id)))) + x[1]),4)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.totalpostings/self.doc_id)))) + x[1]),4)),postings_list.items())) 
         elif self.ranking[0]  == 'l':
-            return dict(map(lambda x: (x[0],round((1 + math.log(x[1]))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
+            return dict(map(lambda x: (x[0],round((1 + math.log(x[1],10))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
         elif self.ranking[0] == 'a':
             return dict(map(lambda x: (x[0],round((0.5 + (0.5*float(x[1]) / max(postings_list.values())))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
         elif self.ranking[0] == 'b':
             return dict(map(lambda x: (x[0],self.doc_frequency(postings_list)*self.normalization(int(x[0]))),postings_list.items()))
         elif self.ranking[0] == 'L':
-            return dict(map(lambda x: (x[0],round(((1 + math.log(x[1])) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))),4)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],round(((1 + math.log(x[1],10)) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))),4)),postings_list.items())) 
         else:
             return dict(map(lambda x: (x[0], x[1]*self.doc_frequency(postings_list)*self.normalization(int(x[0])))))
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 't' or self.ranking=="bm25":
-            return round(math.log(self.doc_id / len(postings_list)),4)
+            return round(math.log(self.doc_id / len(postings_list),10),4)
         elif self.ranking[1] == 'p':
-            return round(max(0, math.log(self.doc_id-len(postings_list)/len(postings_list))),4)
+            return round(max(0, math.log(self.doc_id-len(postings_list)/len(postings_list),10)),4)
         else:
             return 1
  
@@ -113,7 +114,7 @@ class Index:
                             term_info[term_i[0]] = term_info.get(term_i[0],0)+ int(term_i[1].replace(",","")) # {postings_list[doc] += freq}
                     else:
                         term_info = self.term_weight(term_info) # postings_list[doc] is not simple frequency, but the weight (tf*df) 
-                        idf = round(math.log(self.doc_id / len(term_info)),2)
+                        idf = round(math.log(self.doc_id / len(term_info),10),2)
                         dict_file.writelines(str(idf))
                         dict_file.writelines("\n")
                         if self.ranking[2] == 'c':
@@ -132,12 +133,12 @@ class Index:
                     dict_file.write(contents[0] + ":")
             if term:
                 term_info = self.term_weight(term_info)
-                idf = round(math.log(self.doc_id / len(term_info)),2)
+                idf = round(math.log(self.doc_id / len(term_info),10),2)
                 dict_file.writelines(str(idf))
                 dict_file.writelines("\n")
                 if self.ranking[2] == 'c':
-                            for doc,weight in term_info.items():
-                                self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + weight**2 
+                    for doc,weight in term_info.items():
+                        self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + weight**2 
                 output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
 
@@ -225,6 +226,7 @@ class Index:
                 self.dictionary[token][self.doc_id]=self.dictionary[token].get(self.doc_id,0)+1
 
                 self.npostings+=1
+                self.totalpostings+=1
 
             #saving segment to a temporary file
             if (not threshold and psutil.virtual_memory().percent >= 90) or (threshold and self.npostings >= threshold) :
