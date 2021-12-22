@@ -1,5 +1,5 @@
 """
-Information Retrieval Assignment 1 2021/2022
+Information Retrieval Assignment 2 2021/2022
 Authors: Alexandra Carvalho, Margarida Martins
 
 Class Searcher loads the dictionary from the disk, and its search function receives a term and returns its total  frequency
@@ -7,6 +7,7 @@ Class Searcher loads the dictionary from the disk, and its search function recei
 
 from tokenizer import Tokenizer 
 from porter_stemmer import PorterStemmer
+from cache import Cache
 import math
 import os
 import linecache
@@ -21,6 +22,7 @@ class Searcher:
         self.length = int(os.getxattr(index_file, 'user.length').decode())
         self.tokenizer = Tokenizer()
         self.stemmer=PorterStemmer() if os.getxattr(index_file, 'user.stemmer').decode()=='True' else None
+        self.cache = Cache()
 
         f = open("dictionary.txt", 'r')
         counter = 0
@@ -70,20 +72,30 @@ class Searcher:
 
         if self.ranking.split(" ")[0] == "bm25":
             for word in inpt:
-                self.index_file.seek(self.dictionary[word][1])
-                line= self.index_file.readline()
+                if self.cache.is_cached(word):
+                    line = self.cache.get(word)
+                else:
+                    self.index_file.seek(self.dictionary[word][1])
+                    line = self.index_file.readline()
+                    self.cache.add(word,line)
+
                 for item in line.split(","): # doc:tw,doc:tw
                     tup = item.split(":")
                     scores[tup[0]] =  scores.get(tup[0],0) + (self.dictionary[word][0] * float(tup[1]))
         else:
             twq = self.normalized_query_weights(self.term_weight_query(inpt)) # {term : norm_w}
             for word in inpt:
-                self.index_file.seek(self.dictionary[word][1])
-                line= self.index_file.readline()
+                if self.cache.is_cached(word):
+                    line = self.cache.get(word)
+                else:
+                    self.index_file.seek(self.dictionary[word][1])
+                    line = self.index_file.readline()
+                    self.cache.add(word,line)
+
                 for item in line.split(","):
                     tup = item.split(":")
                     scores[tup[0]] = scores.get(tup[0],0) + (twq[word]*float(tup[1])) 
             
         score_list= sorted(scores.items(), key=lambda x: x[1], reverse=True)[:100] #get the first 100 scores
         print("\nQ:", query)
-        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n",""), s[1]) for s in score_list]
+        [print(linecache.getline("idmapper.txt",int(s[0])).strip().replace("\n","")) for s in score_list]

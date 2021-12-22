@@ -1,5 +1,5 @@
 """
-Information Retrieval Assignment 1 2021/2022
+Information Retrieval Assignment 2 2021/2022
 Authors: Alexandra Carvalho, Margarida Martins
 
 Class Index
@@ -41,17 +41,17 @@ class Index:
 
     def term_weight(self, postings_list):
         if self.ranking=='bm25': #bm25 formula ((k + 1) tf) / k((1-b) + b (dl / avdl)) + tfi 
-            return dict(map(lambda x: (x[0],round(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.totalpostings/self.doc_id)))) + x[1]),4)),postings_list.items())) 
+            return dict(map(lambda x: (x[0], '{:.4f}'.format(((self.k+1)*x[1])/ (self.k*((1-self.b)+ (self.b * (self.docs_info[int(x[0])]/(self.totalpostings/self.doc_id)))) + x[1]))),postings_list.items())) 
         elif self.ranking[0]  == 'l':
-            return dict(map(lambda x: (x[0],round((1 + math.log(x[1],10))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
+            return dict(map(lambda x: (x[0],'{:.4f}'.format((1 + math.log(x[1],10))*self.doc_frequency(postings_list)*self.normalization(int(x[0])))),postings_list.items()))
         elif self.ranking[0] == 'a':
-            return dict(map(lambda x: (x[0],round((0.5 + (0.5*float(x[1]) / max(postings_list.values())))*self.doc_frequency(postings_list)*self.normalization(int(x[0])),4)),postings_list.items()))
+            return dict(map(lambda x: (x[0],'{:.4f}'.format((0.5 + (0.5*float(x[1]) / max(postings_list.values())))*self.doc_frequency(postings_list)*self.normalization(int(x[0])))),postings_list.items()))
         elif self.ranking[0] == 'b':
-            return dict(map(lambda x: (x[0],self.doc_frequency(postings_list)*self.normalization(int(x[0]))),postings_list.items()))
+            return dict(map(lambda x: (x[0],'{:.4f}'.format(self.doc_frequency(postings_list)*self.normalization(int(x[0])))),postings_list.items()))
         elif self.ranking[0] == 'L':
-            return dict(map(lambda x: (x[0],round(((1 + math.log(x[1],10)) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))),4)),postings_list.items())) 
+            return dict(map(lambda x: (x[0],'{:.4f}'.format(((1 + math.log(x[1],10)) / (1 + math.avg(postings_list.values()))*self.doc_frequency(postings_list)*self.normalization(int(x[0]))))),postings_list.items())) 
         else:
-            return dict(map(lambda x: (x[0], x[1]*self.doc_frequency(postings_list)*self.normalization(int(x[0])))))
+            return dict(map(lambda x: (x[0], '{:.4f}'.format(x[1]*self.doc_frequency(postings_list)*self.normalization(int(x[0]))))))
 
     def doc_frequency(self,postings_list):
         if self.ranking[1] == 't' or self.ranking=="bm25":
@@ -120,7 +120,7 @@ class Index:
                         dict_file.writelines("\n")
                         if self.ranking[2] == 'c':
                             for doc,weight in term_info.items():
-                                self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + weight**2 
+                                self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + float(weight)**2 
                         output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                         output_file.writelines("\n")
                         term = contents[0]
@@ -141,7 +141,7 @@ class Index:
                 dict_file.writelines("\n")
                 if self.ranking[2] == 'c':
                     for doc,weight in term_info.items():
-                        self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + weight**2 
+                        self.docs_info[int(doc)] = self.docs_info.get(int(doc),0) + float(weight)**2 
                 output_file.writelines(str(term_info).replace("\"","").replace("'","").replace("{","").replace("}","").replace(": ",":"))
                 output_file.writelines("\n")
 
@@ -162,9 +162,9 @@ class Index:
                         doc = entry.split(":")[0]
                         weight = entry.split(":")[1]
                         if counter < postings_list_len-1:
-                            output_file.write(doc+":"+str(float(weight)/math.sqrt(self.docs_info[int(doc)]))+",")
+                            output_file.write(doc+":{:.4f},".format(float(weight)/math.sqrt(self.docs_info[int(doc)])))
                         else:
-                            output_file.write(doc+":"+str(float(weight)/math.sqrt(self.docs_info[int(doc)])))
+                            output_file.write(doc+":{:.4f}".format(float(weight)/math.sqrt(self.docs_info[int(doc)])))
                         counter +=1
                     output_file.write("\n") 
 

@@ -1,5 +1,5 @@
 """
-Information Retrieval Assignment 1 2021/2022
+Information Retrieval Assignment 2 2021/2022
 Authors: Alexandra Carvalho, Margarida Martins
 
 Class Tokenizer tokenizes each document of a given corpus, filtering small words, stopwords, 
